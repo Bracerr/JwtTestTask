@@ -1,0 +1,151 @@
+definitions:
+  domain.User:
+    properties:
+      email:
+        type: string
+      guid:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  response.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  response.JwtResponse:
+    properties:
+      access_token:
+        type: string
+      refresh_token:
+        type: string
+    type: object
+  response.UsersResponse:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      songs:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
+      total:
+        type: integer
+    type: object
+info:
+  contact: {}
+paths:
+  /getAll:
+    get:
+      consumes:
+      - application/json
+      description: Получение всех пользователей с пагинацией. Вспомогательный эндпоинт
+        для более удобного тестирования
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Number of users per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response with user list
+          schema:
+            $ref: '#/definitions/response.UsersResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Get All Users
+      tags:
+      - users
+  /refresh:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Обновление токенов по паре access & refresh tokens.
+        При смене ip высылается email warning на почту указанную при создании и refresh токен в базе обнуляется.
+        Токены были перенесены из headers в body для удобства отладки и проверки задания
+      parameters:
+      - description: Tokens Request
+        in: body
+        name: tokensRequest
+        required: true
+        schema:
+          $ref: '#/definitions/response.JwtResponse'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response with new tokens
+          schema:
+            $ref: '#/definitions/response.JwtResponse'
+        "400":
+          description: Invalid request or tokens
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: Refresh JWT Tokens
+      tags:
+      - users
+  /signIn:
+    post:
+      consumes:
+      - application/json
+      description: Выдача access & refresh токенов по GUID user
+      parameters:
+      - description: User GUID
+        in: query
+        name: guid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful response
+          schema:
+            $ref: '#/definitions/response.JwtResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: User Sign In
+      tags:
+      - users
+  /signUp:
+    post:
+      consumes:
+      - application/json
+      description: Создание пользователя по email
+      parameters:
+      - description: User Email
+        in: query
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User created successfully
+        "400":
+          description: Email is required
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+      summary: User Sign Up
+      tags:
+      - users
+swagger: "2.0"
