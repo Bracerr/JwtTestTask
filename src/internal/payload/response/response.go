@@ -15,5 +15,5 @@ type UsersResponse struct {
 	Total int           `json:"total"`
 	Page  int           `json:"page"`
 	Limit int           `json:"limit"`
-	Users []domain.User `json:"songs"`
+	Users []domain.User `json:"users"`
 }
