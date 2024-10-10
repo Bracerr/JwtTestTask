@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"net/smtp"
+	"time"
 )
 
 type UserService struct {
@@ -36,6 +37,7 @@ func (s *UserService) SignIn(guid string, ip string) (response.JwtResponse, erro
 	if err != nil {
 		return response.JwtResponse{}, fmt.Errorf("user not found")
 	}
+
 	accessToken, err := s.tokenManager.NewAccessToken(guid, ip)
 	if err != nil {
 		return response.JwtResponse{}, err
@@ -54,6 +56,12 @@ func (s *UserService) SignIn(guid string, ip string) (response.JwtResponse, erro
 	}
 	*user.RefreshToken = string(hash)
 
+	if user.RefreshTokenExpiry == nil {
+		user.RefreshTokenExpiry = new(time.Time)
+	}
+	expiryTime := time.Now().Add(s.tokenManager.GetRefreshDuration())
+	*user.RefreshTokenExpiry = expiryTime
+
 	err = s.repo.UpdateUser(user)
 	tokens := response.JwtResponse{AccessToken: accessToken, RefreshToken: refreshToken}
 	return tokens, nil
@@ -61,9 +69,10 @@ func (s *UserService) SignIn(guid string, ip string) (response.JwtResponse, erro
 
 func (s *UserService) SignUp(email string) error {
 	user := domain.User{
-		GUID:         uuid.New(),
-		RefreshToken: nil,
-		Email:        email,
+		GUID:               uuid.New(),
+		RefreshToken:       nil,
+		RefreshTokenExpiry: nil,
+		Email:              email,
 	}
 	return s.repo.InsertUser(user)
 }
@@ -73,9 +82,14 @@ func (s *UserService) RefreshTokens(accessToken string, refreshToken string, cur
 	if err != nil {
 		return response.JwtResponse{}, err
 	}
+
 	user, err := s.repo.FindByGUID(claims.Subject)
 	if err != nil {
 		return response.JwtResponse{}, errors.New("user not found")
+	}
+
+	if user.RefreshTokenExpiry == nil || time.Now().After(*user.RefreshTokenExpiry) {
+		return response.JwtResponse{}, fmt.Errorf("refresh token expired")
 	}
 
 	if user.RefreshToken == nil || bcrypt.CompareHashAndPassword([]byte(*user.RefreshToken), []byte(refreshToken)) != nil {

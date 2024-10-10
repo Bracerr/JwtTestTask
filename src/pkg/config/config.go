@@ -15,8 +15,9 @@ type ServerParams struct {
 }
 
 type JwtParams struct {
-	SigningKey string
-	Duration   time.Duration
+	SigningKey      string
+	AccessDuration  time.Duration
+	RefreshDuration time.Duration
 }
 
 type SmtParams struct {
@@ -65,20 +66,28 @@ func GetServerParams() ServerParams {
 }
 
 func GetJwtParams() JwtParams {
-	durationStr := os.Getenv("JWT_DURATION")
-	durationInt, err := strconv.Atoi(durationStr)
+	AccessDurationStr := os.Getenv("JWT_ACCESS_DURATION")
+	RefreshDurationStr := os.Getenv("JWT_REFRESH_DURATION")
+	AccessDurationInt, err := strconv.Atoi(AccessDurationStr)
 	if err != nil {
-		durationInt = 15
-		logger.Log.Printf("Ошибка при преобразовании JWT_DURATION: %v. Используется значение по умолчанию: %d минут.", err, durationInt)
+		AccessDurationInt = 15
+		logger.Log.Printf("Ошибка при преобразовании JWT_ACCESS_DURATION: %v. Используется значение по умолчанию: %d минут.", err, AccessDurationInt)
 	}
 
-	duration := time.Duration(durationInt) * time.Minute
+	RefreshDurationInt, err := strconv.Atoi(RefreshDurationStr)
+	if err != nil {
+		RefreshDurationInt = 30
+		logger.Log.Printf("Ошибка при преобразовании JWT_REFRESH_DURATIOn: %v. Используется значение по умолчанию: %d дней.", err, AccessDurationInt)
+	}
+
+	AccessDuration := time.Duration(AccessDurationInt) * time.Minute
+	RefreshDuration := time.Duration(RefreshDurationInt) * 24 * time.Hour
 	signingKey := os.Getenv("JWT_SIGNING_KEY")
 	if signingKey == "" {
 		logger.Log.Fatal("Ошибка: параметр JWT_SIGNING_KEY не был получен. Проверьте .env файл.")
 	}
 
-	return JwtParams{SigningKey: signingKey, Duration: duration}
+	return JwtParams{SigningKey: signingKey, AccessDuration: AccessDuration, RefreshDuration: RefreshDuration}
 }
 
 func GetSmtpParams() SmtParams {

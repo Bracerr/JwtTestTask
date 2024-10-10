@@ -10,8 +10,9 @@ import (
 )
 
 type JwtManager struct {
-	signingKey string
-	duration   time.Duration
+	signingKey      string
+	AccessDuration  time.Duration
+	RefreshDuration time.Duration
 }
 
 type CustomClaims struct {
@@ -23,23 +24,31 @@ type JwtManagerInterface interface {
 	NewAccessToken(guid string, ip string) (string, error)
 	NewRefreshToken() (string, error)
 	Parse(accessToken string) (*CustomClaims, error)
+	GetRefreshDuration() time.Duration
 }
 
-func NewManager(signingKey string, jwtDuration time.Duration) (*JwtManager, error) {
+func NewManager(signingKey string, jwtDuration time.Duration, refreshDuration time.Duration) (*JwtManager, error) {
 	if signingKey == "" {
 		return nil, errors.New("empty signing key")
 	}
 	if jwtDuration <= 0 {
-		return nil, errors.New("invalid duration")
+		return nil, errors.New("invalid AccessDuration")
 	}
-	return &JwtManager{signingKey: signingKey, duration: jwtDuration}, nil
+	if refreshDuration <= 0 {
+		return nil, errors.New("invalid RefreshDuration")
+	}
+	return &JwtManager{signingKey: signingKey, AccessDuration: jwtDuration, RefreshDuration: refreshDuration}, nil
+}
+
+func (m *JwtManager) GetRefreshDuration() time.Duration {
+	return m.RefreshDuration
 }
 
 func (m *JwtManager) NewAccessToken(guid string, ip string) (string, error) {
 	claims := CustomClaims{
 		IP: ip,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(m.duration).Unix(),
+			ExpiresAt: time.Now().Add(m.AccessDuration).Unix(),
 			Subject:   guid,
 		},
 	}

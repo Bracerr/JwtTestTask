@@ -82,6 +82,7 @@ func (h *UserHandler) UserSignUp(c echo.Context) error {
 // @Param tokensRequest body response.JwtResponse true "Tokens Request"
 // @Success 200 {object} response.JwtResponse "Successful response with new tokens"
 // @Failure 400 {object} response.ErrorResponse "Invalid request or tokens"
+// @Failure 400 {object} response.ErrorResponse "refresh token expired"
 // @Router /refresh [post]
 func (h *UserHandler) RefreshTokens(c echo.Context) error {
 	var tokensRequest response.JwtResponse
@@ -138,9 +139,10 @@ func (h *UserHandler) GetAll(c echo.Context) error {
 
 	for _, user := range users {
 		userResponse = append(userResponse, domain.User{
-			GUID:         user.GUID,
-			RefreshToken: user.RefreshToken,
-			Email:        user.Email,
+			GUID:               user.GUID,
+			RefreshToken:       user.RefreshToken,
+			RefreshTokenExpiry: user.RefreshTokenExpiry,
+			Email:              user.Email,
 		})
 	}
 

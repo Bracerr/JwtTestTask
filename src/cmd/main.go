@@ -23,7 +23,7 @@ func main() {
 	logger.Log.Infoln("Database connection established")
 
 	jwtModel := config.GetJwtParams()
-	jwtManager, err := auth.NewManager(jwtModel.SigningKey, jwtModel.Duration)
+	jwtManager, err := auth.NewManager(jwtModel.SigningKey, jwtModel.AccessDuration, jwtModel.RefreshDuration)
 
 	if err != nil {
 		logger.Log.Errorln(err.Error())
