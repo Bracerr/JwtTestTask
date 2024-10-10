@@ -12,14 +12,14 @@ RUN go build -o my-app ./src/cmd/main.go
 
 FROM alpine:3.17
 
-RUN apk update && apk --no-cache add ca-certificates
+RUN apk update && apk --no-cache add ca-certificates bash  # Устанавливаем bash
 
 COPY --from=builder /app/my-app /usr/local/bin/my-app
-
-RUN chmod +x /usr/local/bin/my-app
+COPY wait-for-it.sh /usr/local/bin/wait-for-it
+RUN chmod +x /usr/local/bin/wait-for-it
 
 COPY .env ./
 
 EXPOSE 8080
 
-CMD ["my-app"]
+CMD ["wait-for-it", "db:5432", "--", "my-app"]
