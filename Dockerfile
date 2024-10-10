@@ -18,7 +18,7 @@ COPY --from=builder /app/my-app /usr/local/bin/my-app
 
 RUN chmod +x /usr/local/bin/my-app
 
-#COPY .env ./
+COPY .env ./
 
 EXPOSE 8080
 
